@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mural - De Olho na Prática</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #2c3e50; /* Fundo escuro para destacar os post-its */
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden; /* Evita barra de rolagem */
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        header {
+            text-align: center;
+            color: white;
+            padding: 20px 0;
+            background: rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            letter-spacing: 1px;
+        }
+        #mural {
+            flex-grow: 1;
+            position: relative;
+            padding: 40px;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            justify-content: center;
+            gap: 20px;
+        }
+        .post-it {
+            width: 180px;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            padding: 15px;
+            box-sizing: border-box;
+            box-shadow: 3px 5px 15px rgba(0,0,0,0.3);
+            word-wrap: break-word;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+            transform: scale(0.5);
+        }
+        
+        /* Cores variadas para os post-its */
+        .color-1 { background-color: #f1c40f; } /* Amarelo */
+        .color-2 { background-color: #1abc9c; } /* Verde Água */
+        .color-3 { background-color: #3498db; color: white; } /* Azul */
+        .color-4 { background-color: #e74c3c; color: white; } /* Vermelho */
+        .color-5 { background-color: #9b59b6; color: white; } /* Roxo */
+
+        @keyframes popIn {
+            to {
+                opacity: 1;
+                transform: scale(1) rotate(var(--rotacao));
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Acolhida: De Olho na Prática</h1>
+        <p style="margin-top: 5px; font-size: 1.2rem; color: #bdc3c7;">Qual palavra define o maior desafio da gestão pedagógica hoje?</p>
+    </header>
+
+    <div id="mural">
+        </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBJIWRKKic5B-VhtEZhD2fLdkLCQAyDaes",
+            authDomain: "nuvempedagogica-fb98f.firebaseapp.com",
+            projectId: "nuvempedagogica-fb98f",
+            storageBucket: "nuvempedagogica-fb98f.firebasestorage.app",
+            messagingSenderId: "470318049801",
+            appId: "1:470318049801:web:7b7db32f0360352454e6d8",
+            measurementId: "G-5VR3GYLR84"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const mural = document.getElementById('mural');
+
+        // Um Set para guardar as IDs dos documentos e não duplicar na tela
+        const palavrasExibidas = new Set();
+
+        // Consulta ordenada pela data de envio
+        const q = query(collection(db, "palavras"), orderBy("timestamp", "asc"));
+
+        // onSnapshot escuta as mudanças no banco de dados em tempo real
+        onSnapshot(q, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === "added") {
+                    const dados = change.doc.data();
+                    const docId = change.doc.id;
+
+                    if (!palavrasExibidas.has(docId) && dados.texto) {
+                        palavrasExibidas.add(docId);
+                        criarPostIt(dados.texto);
+                    }
+                }
+            });
+        });
+
+        function criarPostIt(texto) {
+            const div = document.createElement('div');
+            div.classList.add('post-it');
+            
+            // Escolhe uma classe de cor aleatória de 1 a 5
+            const corAleatoria = Math.floor(Math.random() * 5) + 1;
+            div.classList.add(`color-${corAleatoria}`);
+
+            // Define uma rotação aleatória leve (entre -8 e 8 graus) para parecer realista
+            const rotacao = (Math.random() * 16) - 8;
+            div.style.setProperty('--rotacao', `${rotacao}deg`);
+
+            div.innerText = texto;
+            mural.appendChild(div);
+        }
+    </script>
+</body>
+</html>
