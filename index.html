@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acolhida - Dinâmica</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h2 {
+            color: #2c3e50;
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        #mensagem {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #27ae60;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Qual palavra define o maior desafio da gestão pedagógica hoje?</h2>
+        <input type="text" id="palavraInput" placeholder="Digite uma palavra..." autocomplete="off" required>
+        <button id="btnEnviar">Enviar Palavra</button>
+        <div id="mensagem">Palavra enviada! Olhe para o telão.</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBJIWRKKic5B-VhtEZhD2fLdkLCQAyDaes",
+            authDomain: "nuvempedagogica-fb98f.firebaseapp.com",
+            projectId: "nuvempedagogica-fb98f",
+            storageBucket: "nuvempedagogica-fb98f.firebasestorage.app",
+            messagingSenderId: "470318049801",
+            appId: "1:470318049801:web:7b7db32f0360352454e6d8",
+            measurementId: "G-5VR3GYLR84"
+        };
+
+        // Inicializa o Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const input = document.getElementById('palavraInput');
+        const btn = document.getElementById('btnEnviar');
+        const mensagem = document.getElementById('mensagem');
+
+        btn.addEventListener('click', async () => {
+            const palavra = input.value.trim().toUpperCase();
+            
+            if (palavra === "") {
+                alert("Por favor, digite uma palavra.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Enviando...";
+
+            try {
+                // Adiciona a palavra na coleção "palavras"
+                await addDoc(collection(db, "palavras"), {
+                    texto: palavra,
+                    timestamp: serverTimestamp()
+                });
+                
+                input.value = "";
+                input.style.display = "none";
+                btn.style.display = "none";
+                mensagem.style.display = "block";
+            } catch (error) {
+                console.error("Erro ao adicionar documento: ", error);
+                alert("Erro ao enviar. Tente novamente.");
+                btn.disabled = false;
+                btn.innerText = "Enviar Palavra";
+            }
+        });
+    </script>
+</body>
+</html>
