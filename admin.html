@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Gestor - Dinâmica</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Baloo 2', cursive; background-color: #f4f7f6; padding: 20px; display: flex; justify-content: center; }
+        .admin-box { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h1 { color: #2c3e50; text-align: center; }
+        label { font-weight: bold; display: block; margin-top: 15px; color: #34495e; }
+        input[type="text"] { width: 100%; padding: 12px; margin-top: 5px; border: 2px solid #bdc3c7; border-radius: 8px; font-family: inherit; font-size: 1rem; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; margin-top: 20px; border: none; border-radius: 8px; font-family: inherit; font-size: 1.1rem; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-salvar { background-color: #27ae60; }
+        .btn-salvar:hover { background-color: #219653; }
+        .btn-zerar { background-color: #e74c3c; margin-top: 30px; }
+        .btn-zerar:hover { background-color: #c0392b; }
+        hr { margin: 30px 0; border: 0; border-top: 2px dashed #ecf0f1; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-box">
+        <h1>Painel de Controle ⚙️</h1>
+        
+        <label>Título principal do Telão:</label>
+        <input type="text" id="inputTitulo" placeholder="Ex: Acolhida: De Olho na Prática">
+
+        <label>Pergunta (Aparece no Celular e Telão):</label>
+        <input type="text" id="inputPergunta" placeholder="Ex: Qual o maior desafio?">
+
+        <button class="btn-salvar" id="btnSalvar">Salvar Novos Textos</button>
+
+        <hr>
+
+        <h3 style="text-align: center; color: #e74c3c; margin-bottom: 5px;">Começar Nova Turma</h3>
+        <p style="text-align: center; font-size: 0.9rem; color: #7f8c8d; margin-top: 0;">Isso vai limpar a tela e começar uma nuvem do zero.</p>
+        <button class="btn-zerar" id="btnZerar">♻️ Zerar Palavras na Tela</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBJIWRKKic5B-VhtEZhD2fLdkLCQAyDaes",
+            authDomain: "nuvempedagogica-fb98f.firebaseapp.com",
+            projectId: "nuvempedagogica-fb98f",
+            storageBucket: "nuvempedagogica-fb98f.firebasestorage.app",
+            messagingSenderId: "470318049801",
+            appId: "1:470318049801:web:7b7db32f0360352454e6d8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const configRef = doc(db, "config", "geral");
+
+        // Carrega os dados atuais ao abrir a página
+        async function carregarDados() {
+            const snap = await getDoc(configRef);
+            if (snap.exists()) {
+                document.getElementById('inputTitulo').value = snap.data().titulo_telao;
+                document.getElementById('inputPergunta').value = snap.data().pergunta;
+            } else {
+                // Cria o documento pela primeira vez se não existir
+                await setDoc(configRef, {
+                    titulo_telao: "Acolhida: De Olho na Prática",
+                    pergunta: "Qual palavra define o maior desafio da gestão pedagógica hoje?",
+                    sessao: Date.now().toString()
+                });
+                carregarDados();
+            }
+        }
+        carregarDados();
+
+        // Botão de Salvar Textos
+        document.getElementById('btnSalvar').addEventListener('click', async () => {
+            const titulo = document.getElementById('inputTitulo').value;
+            const pergunta = document.getElementById('inputPergunta').value;
+            await updateDoc(configRef, { titulo_telao: titulo, pergunta: pergunta });
+            alert("Textos atualizados com sucesso!");
+        });
+
+        // Botão de Zerar (Gera um novo ID de sessão)
+        document.getElementById('btnZerar').addEventListener('click', async () => {
+            if(confirm("Tem certeza? Isso vai limpar o telão para começar de novo.")) {
+                await updateDoc(configRef, { sessao: Date.now().toString() });
+                alert("Nuvem zerada! Pronto para a próxima rodada.");
+            }
+        });
+    </script>
+</body>
+</html>
