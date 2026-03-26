@@ -13,10 +13,8 @@
         .header-text { text-align: center; flex-grow: 1; padding: 0 20px; }
         h1 { margin: 0; font-size: 2.5rem; color: #2c3e50; font-weight: 800; }
         p.subtitulo { margin: 5px 0 0 0; font-size: 1.4rem; color: #e74c3c; font-weight: 600; }
-        #canvas-container { flex-grow: 1; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; position: relative; }
+        #canvas-container { flex-grow: 1; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; position: relative; padding: 20px; box-sizing: border-box; }
         canvas { width: 100%; height: 100%; }
-        
-        /* Uma mensagem sutil se a lousa estiver vazia */
         #msgVazio { position: absolute; color: rgba(255,255,255,0.3); font-family: 'Caveat', cursive; font-size: 3rem; text-align: center; pointer-events: none; }
     </style>
 </head>
@@ -58,24 +56,21 @@
         const container = document.getElementById('canvas-container');
         const msgVazio = document.getElementById('msgVazio');
 
-        // Escuta as configurações (Título, Pergunta e Sessão/Reset)
         onSnapshot(doc(db, "config", "geral"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 document.getElementById('tituloTelao').innerText = data.titulo_telao;
                 document.getElementById('perguntaTelao').innerText = data.pergunta;
 
-                // Se a sessão mudou (alguém apertou o botão "Zerar" no admin)
                 if (sessaoAtual !== data.sessao) {
                     sessaoAtual = data.sessao;
-                    iniciarEscutaPalavras(); // Reinicia a busca de palavras focado na nova sessão
+                    iniciarEscutaPalavras(); 
                 }
             }
         });
 
-        // Função que busca as palavras da sessão atual e conta as repetições
         function iniciarEscutaPalavras() {
-            if (listenerPalavras) listenerPalavras(); // Cancela escuta anterior se houver
+            if (listenerPalavras) listenerPalavras(); 
 
             const q = query(collection(db, "palavras"), where("sessao", "==", sessaoAtual));
             
@@ -87,48 +82,56 @@
                     contagem[palavra] = (contagem[palavra] || 0) + 1;
                 });
 
-                // Transforma o objeto { "FOCO": 3, "TEMPO": 1 } no formato que a biblioteca exige
+                // Descobre qual é a palavra mais repetida para usar como limite (Escala Relativa)
+                const maxRepeticoes = Math.max(...Object.values(contagem), 1);
+
                 const listaNuvem = Object.keys(contagem).map(palavra => {
-                    // O peso da palavra define o tamanho. Multipliquei por 20 para dar um bom destaque inicial.
-                    return [palavra, contagem[palavra] * 20]; 
+                    // Peso máximo base é 100. As outras palavras crescem em proporção à maior.
+                    let peso = (contagem[palavra] / maxRepeticoes) * 100;
+                    
+                    // Garante que as palavras únicas (peso baixo) não fiquem microscópicas
+                    if (peso < 25) peso = 25; 
+
+                    return [palavra, peso]; 
                 });
 
                 desenharNuvem(listaNuvem);
             });
         }
 
-        // Função que aciona a biblioteca e desenha a arte no Canvas
         function desenharNuvem(lista) {
-            // Ajusta o tamanho do canvas para o tamanho da tela disponível
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
 
             if (lista.length === 0) {
                 msgVazio.style.display = "block";
                 const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa a tela
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 return;
             }
 
             msgVazio.style.display = "none";
 
-            // Opções visuais da Nuvem de Palavras
             WordCloud(canvas, {
                 list: lista,
-                fontFamily: 'Caveat, cursive', // Nossa fonte escolar
+                fontFamily: 'Caveat, cursive', 
                 fontWeight: 'bold',
-                color: 'random-light', // Cores claras para contrastar com o quadro negro
+                color: 'random-light', 
                 backgroundColor: 'transparent',
-                rotateRatio: 0.2, // 20% das palavras ficarão levemente tortas para dar estilo
-                minSize: 15,
+                rotateRatio: 0.1, // Reduzi um pouco a rotação para caberem mais palavras
+                minSize: 10,
+                
+                // AS DUAS CONFIGURAÇÕES QUE CORRIGEM O BUG:
+                shrinkToFit: true, // Obriga a encolher a palavra se ela for vazar
+                drawOutOfBound: false, // Proíbe desenhar fora do quadro
+                
                 weightFactor: function (size) {
-                    // Aumenta o tamanho base para ficar bem visível no telão
-                    return size * (container.clientWidth / 600); 
+                    // Um multiplicador mais seguro que se ajusta a qualquer tela sem exagerar
+                    return size * (container.clientWidth / 1200); 
                 }
             });
         }
 
-        // Redesenha a nuvem se o projetor/janela mudar de tamanho
         window.addEventListener('resize', () => {
             if (sessaoAtual) iniciarEscutaPalavras();
         });
