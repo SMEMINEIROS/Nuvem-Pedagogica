@@ -56,6 +56,7 @@
         const container = document.getElementById('canvas-container');
         const msgVazio = document.getElementById('msgVazio');
 
+        // Escuta as configurações do Admin
         onSnapshot(doc(db, "config", "geral"), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -82,18 +83,22 @@
                     contagem[palavra] = (contagem[palavra] || 0) + 1;
                 });
 
-                // Descobre qual é a palavra mais repetida para usar como limite (Escala Relativa)
-                const maxRepeticoes = Math.max(...Object.values(contagem), 1);
+                // NOVA MATEMÁTICA DE CRESCIMENTO ABSOLUTO AMORTECIDO
+                const tamanhoBase = 20;   // Tamanho mínimo que toda palavra terá
+                const fatorCrescimento = 18; // Quanto ela ganha de força a cada voto (ajuste se quiser mais extremo)
 
                 const listaNuvem = Object.keys(contagem).map(palavra => {
-                    // Peso máximo base é 100. As outras palavras crescem em proporção à maior.
-                    let peso = (contagem[palavra] / maxRepeticoes) * 100;
+                    const repeticoes = contagem[palavra];
                     
-                    // Garante que as palavras únicas (peso baixo) não fiquem microscópicas
-                    if (peso < 25) peso = 25; 
-
-                    return [palavra, peso]; 
+                    // A Raiz Quadrada faz com que o 1º voto dê muito tamanho, mas o 50º voto dê um aumento menor.
+                    // Isso garante que a palavra cresça SEMPRE, mas nunca estoure a tela.
+                    const pesoCalculado = tamanhoBase + (Math.sqrt(repeticoes) * fatorCrescimento);
+                    
+                    return [palavra, pesoCalculado]; 
                 });
+
+                // Ordena a lista para as maiores ficarem no meio (comportamento padrão desejado da wordcloud2)
+                listaNuvem.sort((a, b) => b[1] - a[1]);
 
                 desenharNuvem(listaNuvem);
             });
@@ -116,22 +121,22 @@
                 list: lista,
                 fontFamily: 'Caveat, cursive', 
                 fontWeight: 'bold',
-                color: 'random-light', 
+                color: 'random-light', // Cores de giz coloridos
                 backgroundColor: 'transparent',
-                rotateRatio: 0.1, // Reduzi um pouco a rotação para caberem mais palavras
-                minSize: 10,
+                rotateRatio: 0.1, // Apenas 10% das palavras deitadas, mantém a leitura fácil
                 
-                // AS DUAS CONFIGURAÇÕES QUE CORRIGEM O BUG:
-                shrinkToFit: true, // Obriga a encolher a palavra se ela for vazar
-                drawOutOfBound: false, // Proíbe desenhar fora do quadro
+                // Travas de segurança visuais
+                shrinkToFit: true, 
+                drawOutOfBound: false, 
                 
+                // Multiplicador responsivo: garante que fique bom em qualquer tamanho de projetor
                 weightFactor: function (size) {
-                    // Um multiplicador mais seguro que se ajusta a qualquer tela sem exagerar
                     return size * (container.clientWidth / 1200); 
                 }
             });
         }
 
+        // Se redimensionar a janela, redesenha
         window.addEventListener('resize', () => {
             if (sessaoAtual) iniciarEscutaPalavras();
         });
