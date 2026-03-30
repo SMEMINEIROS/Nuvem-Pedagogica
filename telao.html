@@ -83,21 +83,21 @@
                     contagem[palavra] = (contagem[palavra] || 0) + 1;
                 });
 
-                // NOVA MATEMÁTICA DE CRESCIMENTO ABSOLUTO AMORTECIDO
-                const tamanhoBase = 20;   // Tamanho mínimo que toda palavra terá
-                const fatorCrescimento = 18; // Quanto ela ganha de força a cada voto (ajuste se quiser mais extremo)
+                // MATEMÁTICA DE CRESCIMENTO ABSOLUTO AMORTECIDO
+                const tamanhoBase = 20;   
+                const fatorCrescimento = 18; // Ajuste se quiser mais ou menos agressividade
 
                 const listaNuvem = Object.keys(contagem).map(palavra => {
                     const repeticoes = contagem[palavra];
                     
-                    // A Raiz Quadrada faz com que o 1º voto dê muito tamanho, mas o 50º voto dê um aumento menor.
-                    // Isso garante que a palavra cresça SEMPRE, mas nunca estoure a tela.
+                    // A Raiz Quadrada faz com que a líder cresça SEMPRE, mas nunca estoure a tela.
+                    // REMOVIDO o piso de peso < 25 para que palavras menores fiquem bem pequenas e ocupem os cantos.
                     const pesoCalculado = tamanhoBase + (Math.sqrt(repeticoes) * fatorCrescimento);
                     
                     return [palavra, pesoCalculado]; 
                 });
 
-                // Ordena a lista para as maiores ficarem no meio (comportamento padrão desejado da wordcloud2)
+                // Ordena a lista para as maiores ficarem no meio
                 listaNuvem.sort((a, b) => b[1] - a[1]);
 
                 desenharNuvem(listaNuvem);
@@ -119,24 +119,27 @@
 
             WordCloud(canvas, {
                 list: lista,
-                fontFamily: 'Caveat, cursive', 
+                fontFamily: 'Caveat, cursive', // Fonte giz
                 fontWeight: 'bold',
-                color: 'random-light', // Cores de giz coloridos
+                color: 'random-light', // Cores giz coloridos
                 backgroundColor: 'transparent',
-                rotateRatio: 0.1, // Apenas 10% das palavras deitadas, mantém a leitura fácil
                 
-                // Travas de segurança visuais
-                shrinkToFit: true, 
-                drawOutOfBound: false, 
+                // ALTERAÇÕES SOLICITADAS:
+                rotateRatio: 0, // Força TODAS as palavras a ficarem na horizontal
+                shape: 'square', // Instruiu para preencher o quadro retangular da tela
                 
-                // Multiplicador responsivo: garante que fique bom em qualquer tamanho de projetor
+                shrinkToFit: true, // Encolhe se for vazar
+                drawOutOfBound: false, // Proíbe desenhar fora do quadro
+                minSize: 10,
+                
+                // Multiplicador responsivo AUMENTADO para que as palavras ocupem mais o quadro
                 weightFactor: function (size) {
-                    return size * (container.clientWidth / 1200); 
+                    // Mudei o divisor de 1200 para 700 para fazer as palavras maiores
+                    return size * (container.clientWidth / 700); 
                 }
             });
         }
 
-        // Se redimensionar a janela, redesenha
         window.addEventListener('resize', () => {
             if (sessaoAtual) iniciarEscutaPalavras();
         });
